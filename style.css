@@ -2,8 +2,10 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #fff5e1, #ffe6f0);
+    background: linear-gradient(135deg, #fff5e1, #ffb6c1);
     min-height: 100vh;
+}
+
 }
 
 .container {
@@ -181,3 +183,4 @@ button:hover {
     }
 
 }
+
