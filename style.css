@@ -2,7 +2,8 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
+    background: linear-gradient(135deg, #fff5e1, #ffe6f0);
+    min-height: 100vh;
 }
 
 .container {
@@ -178,4 +179,5 @@ button:hover {
     .grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
 }
