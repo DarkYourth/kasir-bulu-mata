@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kasir Bulu Mata</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🪶 Kasir Bulu Mata</h1>
+            <nav>
+                <button id="adminBtn">Admin Mode</button>
+                <button id="exportBtn">Export Data</button>
+                <button id="importBtn">Import Data</button>
+            </nav>
+        </header>
+
+        <!-- Admin Panel (Hidden by default) -->
+        <div id="adminPanel" class="admin-panel hidden">
+            <h2>Edit Produk</h2>
+            <ul id="productList"></ul>
+            <button id="addProductBtn">Tambah Produk Baru</button>
+            <button id="saveProductsBtn">Simpan Perubahan</button>
+        </div>
+
+        <!-- Main Kasir -->
+        <div class="main-content">
+            <section class="products">
+                <h2>Produk Tersedia</h2>
+                <div id="productsGrid" class="grid"></div>
+            </section>
+
+            <section class="cart">
+                <h2>Keranjang</h2>
+                <ul id="cartList"></ul>
+                <div class="total">
+                    <strong>Total: Rp <span id="total">0</span></strong>
+                </div>
+                <button id="checkoutBtn">Checkout & Cetak Struk</button>
+                <button id="clearCartBtn">Kosongkan Keranjang</button>
+            </section>
+        </div>
+
+        <!-- Struk Print (Hidden, muncul saat print) -->
+        <div id="receipt" class="receipt hidden">
+            <h2>Struk Transaksi - Bulu Mata Shop</h2>
+            <p>Tanggal: <span id="receiptDate"></span></p>
+            <ul id="receiptItems"></ul>
+            <p><strong>Total: Rp <span id="receiptTotal">0</span></strong></p>
+            <p>Terima kasih!</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
