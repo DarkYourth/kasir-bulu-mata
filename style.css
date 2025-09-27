@@ -816,4 +816,20 @@ header nav button:hover {
     .tab {
         text-align: center;
     }
+
+}
+@media print {
+    body * {
+        display: none !important;
+    }
+    #receipt, #receipt * {
+        display: block !important;
+    }
+    #receipt {
+        position: static !important;
+        width: auto !important;
+        margin: 0 auto !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
 }
