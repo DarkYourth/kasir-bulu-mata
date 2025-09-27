@@ -506,3 +506,66 @@ document.addEventListener('DOMContentLoaded', function() {
     renderProducts();
     renderCart();
 });
+
+let renderTimeout = null;
+
+function renderCart() {
+    if (renderTimeout) {
+        clearTimeout(renderTimeout);
+    }
+    
+    renderTimeout = setTimeout(() => {
+        // Kode renderCart yang asli di sini
+        const elements = getDOMElements();
+        if (!elements.cartList || !elements.cartEmpty || !elements.totalEl) return;
+
+        elements.cartList.innerHTML = '';
+        let total = 0;
+
+        if (cart.length === 0) {
+            elements.cartEmpty.style.display = 'block';
+            elements.cartList.style.display = 'none';
+        } else {
+            elements.cartEmpty.style.display = 'none';
+            elements.cartList.style.display = 'block';
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+
+                const li = document.createElement('li');
+                li.className = 'cart-item';
+                li.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-price-row">
+                            <input type="text" value="${formatCurrency(item.basePrice)}"
+                                   oninput="updateBasePriceDelayed(${item.id}, this.value)"
+                                   class="cart-item-price-input">
+                            <div class="cart-item-discount-note">${item.discount > 0 ? `Diskon ${item.discount}% → Rp ${formatCurrency(item.price)}` : `Rp ${formatCurrency(item.price)}`}</div>
+                        </div>
+                    </div>
+                    <div class="cart-item-quantity">
+                        <button class="quantity-btn" onclick="decreaseQuantity(${item.id})">-</button>
+                        <span>${item.quantity}</span>
+                        <button class="quantity-btn" onclick="increaseQuantity(${item.id})">+</button>
+                        <button class="quantity-btn" onclick="removeFromCart(${item.id})" style="background:#e74c3c;color:white;margin-left:5px;">×</button>
+                    </div>
+                `;
+                elements.cartList.appendChild(li);
+            });
+        }
+
+        elements.totalEl.textContent = `Rp ${formatCurrency(total)}`;
+    }, 100); // Delay 100ms
+}
+
+function updateBasePriceDelayed(id, newPriceStr) {
+    if (renderTimeout) {
+        clearTimeout(renderTimeout);
+    }
+    
+    renderTimeout = setTimeout(() => {
+        updateBasePrice(id, newPriceStr);
+    }, 500); // Delay 500ms sebelum update
+}
