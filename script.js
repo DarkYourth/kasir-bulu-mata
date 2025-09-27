@@ -1,16 +1,29 @@
 // Inisialisasi data default jika kosong
 let products = JSON.parse(localStorage.getItem('products')) || [
-    { id: 1, name: 'Bulu Mata Natural', price: 0, photo: 'data:image/svg+xml;base64,...', category: 'natural' },
-    { id: 2, name: 'Bulu Mata Volume', price: 0, photo: 'data:image/svg+xml;base64,...', category: 'dramatic' },
-    { id: 3, name: 'Lem Bulu Mata', price: 0, photo: 'data:image/svg+xml;base64,...', category: 'accessories' },
-    { id: 4, name: 'Pembersih Bulu Mata', price: 0, photo: 'data:image/svg+xml;base64,...', category: 'accessories' }
+    { id: 1, name: 'Bulu Mata Natural', price: 50000, discount: 0, photo: 'data:image/svg+xml;base64,...', category: 'natural' },
+    { id: 2, name: 'Bulu Mata Volume', price: 75000, discount: 10, photo: 'data:image/svg+xml;base64,...', category: 'dramatic' },
+    { id: 3, name: 'Lem Bulu Mata', price: 25000, discount: 0, photo: 'data:image/svg+xml;base64,...', category: 'accessories' },
+    { id: 4, name: 'Pembersih Bulu Mata', price: 15000, discount: 5, photo: 'data:image/svg+xml;base64,...', category: 'accessories' }
 ];
 
 let cart = [];
 let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
 let currentCategory = 'Semua';
 
-// Ambil elemen DOM
+// ===== Utility: Format & Parse =====
+function formatCurrency(num) {
+    return new Intl.NumberFormat('id-ID').format(num || 0);
+}
+
+function parseCurrency(str) {
+    if (typeof str === 'number') return Math.round(str);
+    if (!str) return 0;
+    // Hapus semua yang bukan digit
+    const digits = String(str).replace(/[^\d]/g, '');
+    return digits ? parseInt(digits, 10) : 0;
+}
+
+// ===== DOM =====
 function getDOMElements() {
     return {
         adminBtn: document.getElementById('adminBtn'),
@@ -35,7 +48,7 @@ function getDOMElements() {
     };
 }
 
-// Event Listeners
+// ===== Init Events =====
 function initializeEventListeners() {
     const elements = getDOMElements();
 
@@ -77,44 +90,18 @@ function initializeEventListeners() {
         });
     }
 
-    if (elements.checkoutBtn) {
-        elements.checkoutBtn.addEventListener('click', checkout);
-    }
-
-    if (elements.printBtn) {
-        elements.printBtn.addEventListener('click', printReceipt);
-    }
-
-    if (elements.clearCartBtn) {
-        elements.clearCartBtn.addEventListener('click', clearCart);
-    }
-
-    if (elements.exportBtn) {
-        elements.exportBtn.addEventListener('click', exportData);
-    }
-
-    if (elements.importBtn) {
-        elements.importBtn.addEventListener('click', importData);
-    }
-
-    if (elements.addProductBtn) {
-        elements.addProductBtn.addEventListener('click', addNewProduct);
-    }
-
-    if (elements.saveProductsBtn) {
-        elements.saveProductsBtn.addEventListener('click', saveProducts);
-    }
-
-    if (elements.saveProductBtn) {
-        elements.saveProductBtn.addEventListener('click', saveProductForm);
-    }
-
-    if (elements.cancelEditBtn) {
-        elements.cancelEditBtn.addEventListener('click', cancelEdit);
-    }
+    if (elements.checkoutBtn) elements.checkoutBtn.addEventListener('click', checkout);
+    if (elements.printBtn) elements.printBtn.addEventListener('click', printReceipt);
+    if (elements.clearCartBtn) elements.clearCartBtn.addEventListener('click', clearCart);
+    if (elements.exportBtn) elements.exportBtn.addEventListener('click', exportData);
+    if (elements.importBtn) elements.importBtn.addEventListener('click', importData);
+    if (elements.addProductBtn) elements.addProductBtn.addEventListener('click', addNewProduct);
+    if (elements.saveProductsBtn) elements.saveProductsBtn.addEventListener('click', saveProducts);
+    if (elements.saveProductBtn) elements.saveProductBtn.addEventListener('click', saveProductForm);
+    if (elements.cancelEditBtn) elements.cancelEditBtn.addEventListener('click', cancelEdit);
 }
 
-// Render Produk (tanpa harga & stok)
+// ===== Produk =====
 function renderProducts() {
     const elements = getDOMElements();
     if (!elements.productsGrid) return;
@@ -141,36 +128,43 @@ function renderProducts() {
                 <img src="${product.photo}" alt="${product.name}">
             </div>
             <div class="product-name">${product.name}</div>
+            ${product.discount > 0 ? `<div class="product-discount">Diskon ${product.discount}%</div>` : ''}
             <button class="add-button" onclick="addToCart(${product.id})">Tambah</button>
         `;
         elements.productsGrid.appendChild(card);
     });
 }
 
-// Tambah ke Keranjang
+// ===== Keranjang =====
+// Add: store basePrice & price(after discount)
 function addToCart(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
+
+    const base = product.price || 0;
+    const discount = product.discount || 0;
+    const eff = Math.round(base * (1 - discount / 100));
 
     const existing = cart.find(item => item.id === id);
     if (existing) {
         existing.quantity += 1;
     } else {
-        cart.push({ ...product, quantity: 1, price: product.price || 0 });
+        // store: id, name, basePrice, discount, price (after discount)
+        cart.push({ id: product.id, name: product.name, category: product.category, photo: product.photo, basePrice: base, discount: discount, price: eff, quantity: 1 });
     }
     renderCart();
 }
 
-// Update harga manual
-function updatePrice(id, newPrice) {
+// When user edits the input, treat it as new basePrice -> recalc price with discount
+function updateBasePrice(id, newPriceStr) {
     const item = cart.find(i => i.id === id);
-    if (item) {
-        item.price = parseFloat(newPrice) || 0;
-        renderCart();
-    }
+    if (!item) return;
+    const base = parseCurrency(newPriceStr);
+    item.basePrice = base;
+    item.price = Math.round(base * (1 - (item.discount || 0) / 100));
+    renderCart();
 }
 
-// Render Keranjang
 function renderCart() {
     const elements = getDOMElements();
     if (!elements.cartList || !elements.cartEmpty || !elements.totalEl) return;
@@ -194,9 +188,12 @@ function renderCart() {
             li.innerHTML = `
                 <div class="cart-item-info">
                     <div class="cart-item-name">${item.name}</div>
-                    <input type="number" value="${item.price}" 
-                           onchange="updatePrice(${item.id}, this.value)" 
-                           class="cart-item-price-input">
+                    <div class="cart-item-price-row">
+                        <input type="text" value="${formatCurrency(item.basePrice)}"
+                               oninput="updateBasePrice(${item.id}, this.value)"
+                               class="cart-item-price-input">
+                        <div class="cart-item-discount-note">${item.discount > 0 ? `Diskon ${item.discount}% → Rp ${formatCurrency(item.price)}` : `Rp ${formatCurrency(item.price)}`}</div>
+                    </div>
                 </div>
                 <div class="cart-item-quantity">
                     <button class="quantity-btn" onclick="decreaseQuantity(${item.id})">-</button>
@@ -209,10 +206,10 @@ function renderCart() {
         });
     }
 
-    elements.totalEl.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+    elements.totalEl.textContent = `Rp ${formatCurrency(total)}`;
 }
 
-// Quantity
+// Quantity functions
 function decreaseQuantity(id) {
     const item = cart.find(item => item.id === id);
     if (item && item.quantity > 1) {
@@ -236,7 +233,7 @@ function removeFromCart(id) {
     renderCart();
 }
 
-// Checkout
+// ===== Checkout =====
 function checkout() {
     if (cart.length === 0) {
         alert('Keranjang kosong!');
@@ -244,11 +241,11 @@ function checkout() {
     }
 
     const customerName = document.querySelector('.customer-input input')?.value || 'Customer';
-    const paymentAmount = parseFloat(document.querySelector('.payment-input input')?.value) || 0;
+    const paymentAmount = parseCurrency(document.querySelector('.payment-input input')?.value || "0");
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     if (paymentAmount < total) {
-        alert(`Jumlah bayar kurang! Total: Rp ${total.toLocaleString('id-ID')}`);
+        alert(`Jumlah bayar kurang! Total: Rp ${formatCurrency(total)}`);
         return;
     }
 
@@ -259,7 +256,7 @@ function checkout() {
         id: Date.now(), 
         date, 
         customerName,
-        items: [...cart], 
+        items: JSON.parse(JSON.stringify(cart)), // salin nilai saat ini
         total,
         paymentAmount,
         change
@@ -267,19 +264,17 @@ function checkout() {
     transactions.push(transaction);
     localStorage.setItem('transactions', JSON.stringify(transactions));
 
+    // update stok tidak ada di model sekarang, jadi tidak dilakukan
+
     showReceipt(transaction);
     cart = [];
     renderCart();
 
-    if (document.querySelector('.customer-input input')) {
-        document.querySelector('.customer-input input').value = '';
-    }
-    if (document.querySelector('.payment-input input')) {
-        document.querySelector('.payment-input input').value = '';
-    }
+    if (document.querySelector('.customer-input input')) document.querySelector('.customer-input input').value = '';
+    if (document.querySelector('.payment-input input')) document.querySelector('.payment-input input').value = '';
 }
 
-// Struk
+// ===== Struk =====
 function showReceipt(transaction) {
     const receipt = document.getElementById('receipt');
     const receiptDate = document.getElementById('receiptDate');
@@ -294,11 +289,11 @@ function showReceipt(transaction) {
     transaction.items.forEach(item => {
         const itemTotal = item.price * item.quantity;
         const li = document.createElement('li');
-        li.textContent = `${item.name} x${item.quantity} - Rp ${itemTotal.toLocaleString('id-ID')}`;
+        li.textContent = `${item.name} x${item.quantity} - Rp ${formatCurrency(itemTotal)}`;
         receiptItems.appendChild(li);
     });
 
-    receiptTotal.textContent = transaction.total.toLocaleString('id-ID');
+    receiptTotal.textContent = formatCurrency(transaction.total);
     receipt.classList.remove('hidden');
 }
 
@@ -310,7 +305,7 @@ function printReceipt() {
 
     const date = new Date().toLocaleString('id-ID');
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const transaction = { id: Date.now(), date, items: [...cart], total };
+    const transaction = { id: Date.now(), date, items: JSON.parse(JSON.stringify(cart)), total };
 
     showReceipt(transaction);
 
@@ -332,7 +327,7 @@ function clearCart() {
     }
 }
 
-// Admin
+// ===== Admin =====
 function renderAdminProducts() {
     const elements = getDOMElements();
     if (!elements.productList) return;
@@ -344,6 +339,8 @@ function renderAdminProducts() {
         li.innerHTML = `
             <img src="${product.photo}" alt="${product.name}">
             <input type="text" value="${product.name}" id="name-${product.id}" placeholder="Nama Produk">
+            <input type="number" value="${product.price}" id="price-${product.id}" placeholder="Harga">
+            <input type="number" value="${product.discount}" id="discount-${product.id}" placeholder="Diskon %" min="0" max="100">
             <input type="file" accept="image/*" onchange="updatePhoto(${product.id}, this)">
             <button onclick="deleteProduct(${product.id})">Hapus</button>
         `;
@@ -357,9 +354,12 @@ function updatePhoto(id, input) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const product = products.find(p => p.id === id);
-            product.photo = e.target.result;
-            const img = input.previousElementSibling;
-            img.src = e.target.result;
+            if (product) product.photo = e.target.result;
+            const li = input.closest('li');
+            if (li) {
+                const img = li.querySelector('img');
+                if (img) img.src = e.target.result;
+            }
         };
         reader.readAsDataURL(file);
     }
@@ -371,26 +371,33 @@ function addNewProduct() {
         id: newId, 
         name: 'Produk Baru', 
         price: 0, 
+        discount: 0,
         category: 'natural',
         photo: 'data:image/svg+xml;base64,...'
     };
     products.push(newProduct);
+    localStorage.setItem('products', JSON.stringify(products));
     renderAdminProducts();
 }
 
 function deleteProduct(id) {
     if (confirm('Yakin hapus produk ini?')) {
         products = products.filter(p => p.id !== id);
+        localStorage.setItem('products', JSON.stringify(products));
         renderAdminProducts();
         renderProducts();
-        localStorage.setItem('products', JSON.stringify(products));
     }
 }
 
 function saveProducts() {
     products.forEach(product => {
         const nameInput = document.getElementById(`name-${product.id}`);
+        const priceInput = document.getElementById(`price-${product.id}`);
+        const discountInput = document.getElementById(`discount-${product.id}`);
+
         if (nameInput) product.name = nameInput.value;
+        if (priceInput) product.price = parseInt(priceInput.value) || 0;
+        if (discountInput) product.discount = parseInt(discountInput.value) || 0;
     });
 
     localStorage.setItem('products', JSON.stringify(products));
@@ -400,6 +407,8 @@ function saveProducts() {
 
 function saveProductForm() {
     const name = document.getElementById('product-name').value;
+    const price = parseInt(document.getElementById('product-price').value) || 0;
+    const discount = parseInt(document.getElementById('product-discount').value) || 0;
     const category = document.getElementById('product-category').value;
 
     if (name) {
@@ -407,7 +416,8 @@ function saveProductForm() {
         const newProduct = {
             id: newId,
             name,
-            price: 0,
+            price,
+            discount,
             category,
             photo: 'data:image/svg+xml;base64,...'
         };
@@ -429,9 +439,11 @@ function saveProductForm() {
 
 function cancelEdit() {
     document.getElementById('product-name').value = '';
+    document.getElementById('product-price').value = '';
+    document.getElementById('product-discount').value = '';
 }
 
-// Export / Import
+// ===== Export / Import =====
 function exportData() {
     const data = {
         products: products,
@@ -483,7 +495,7 @@ function importData() {
     input.click();
 }
 
-// Init
+// ===== Init =====
 if (typeof(Storage) === "undefined") {
     alert("Browser Anda tidak support localStorage! Beberapa fitur mungkin tidak bekerja.");
 }
