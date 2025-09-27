@@ -1,4 +1,3 @@
-
 // Inisialisasi data default jika kosong
 let products = JSON.parse(localStorage.getItem('products')) || [
     { id: 1, name: 'Bulu Mata Natural', price: 50000, discount: 0, photo: 'data:image/svg+xml;base64,...', category: 'natural' },
@@ -19,7 +18,6 @@ function formatCurrency(num) {
 function parseCurrency(str) {
     if (typeof str === 'number') return Math.round(str);
     if (!str) return 0;
-    // Hapus semua yang bukan digit
     const digits = String(str).replace(/[^\d]/g, '');
     return digits ? parseInt(digits, 10) : 0;
 }
@@ -137,7 +135,6 @@ function renderProducts() {
 }
 
 // ===== Keranjang =====
-// Add: store basePrice & price(after discount)
 function addToCart(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
@@ -150,13 +147,11 @@ function addToCart(id) {
     if (existing) {
         existing.quantity += 1;
     } else {
-        // store: id, name, basePrice, discount, price (after discount)
         cart.push({ id: product.id, name: product.name, category: product.category, photo: product.photo, basePrice: base, discount: discount, price: eff, quantity: 1 });
     }
     renderCart();
 }
 
-// When user edits the input, treat it as new basePrice -> recalc price with discount
 function updateBasePrice(id, newPriceStr) {
     const item = cart.find(i => i.id === id);
     if (!item) return;
@@ -166,51 +161,63 @@ function updateBasePrice(id, newPriceStr) {
     renderCart();
 }
 
+let renderTimeout = null;
+
 function renderCart() {
-    const elements = getDOMElements();
-    if (!elements.cartList || !elements.cartEmpty || !elements.totalEl) return;
+    if (renderTimeout) clearTimeout(renderTimeout);
+    
+    renderTimeout = setTimeout(() => {
+        const elements = getDOMElements();
+        if (!elements.cartList || !elements.cartEmpty || !elements.totalEl) return;
 
-    elements.cartList.innerHTML = '';
-    let total = 0;
+        elements.cartList.innerHTML = '';
+        let total = 0;
 
-    if (cart.length === 0) {
-        elements.cartEmpty.style.display = 'block';
-        elements.cartList.style.display = 'none';
-    } else {
-        elements.cartEmpty.style.display = 'none';
-        elements.cartList.style.display = 'block';
+        if (cart.length === 0) {
+            elements.cartEmpty.style.display = 'block';
+            elements.cartList.style.display = 'none';
+        } else {
+            elements.cartEmpty.style.display = 'none';
+            elements.cartList.style.display = 'block';
 
-        cart.forEach(item => {
-            const itemTotal = item.price * item.quantity;
-            total += itemTotal;
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
 
-            const li = document.createElement('li');
-            li.className = 'cart-item';
-            li.innerHTML = `
-                <div class="cart-item-info">
-                    <div class="cart-item-name">${item.name}</div>
-                    <div class="cart-item-price-row">
-                        <input type="text" value="${formatCurrency(item.basePrice)}"
-                               oninput="updateBasePrice(${item.id}, this.value)"
-                               class="cart-item-price-input">
-                        <div class="cart-item-discount-note">${item.discount > 0 ? `Diskon ${item.discount}% → Rp ${formatCurrency(item.price)}` : `Rp ${formatCurrency(item.price)}`}</div>
+                const li = document.createElement('li');
+                li.className = 'cart-item';
+                li.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-price-row">
+                            <input type="text" value="${formatCurrency(item.basePrice)}"
+                                   oninput="updateBasePriceDelayed(${item.id}, this.value)"
+                                   class="cart-item-price-input">
+                            <div class="cart-item-discount-note">${item.discount > 0 ? `Diskon ${item.discount}% → Rp ${formatCurrency(item.price)}` : `Rp ${formatCurrency(item.price)}`}</div>
+                        </div>
                     </div>
-                </div>
-                <div class="cart-item-quantity">
-                    <button class="quantity-btn" onclick="decreaseQuantity(${item.id})">-</button>
-                    <span>${item.quantity}</span>
-                    <button class="quantity-btn" onclick="increaseQuantity(${item.id})">+</button>
-                    <button class="quantity-btn" onclick="removeFromCart(${item.id})" style="background:#e74c3c;color:white;margin-left:5px;">×</button>
-                </div>
-            `;
-            elements.cartList.appendChild(li);
-        });
-    }
+                    <div class="cart-item-quantity">
+                        <button class="quantity-btn" onclick="decreaseQuantity(${item.id})">-</button>
+                        <span>${item.quantity}</span>
+                        <button class="quantity-btn" onclick="increaseQuantity(${item.id})">+</button>
+                        <button class="quantity-btn" onclick="removeFromCart(${item.id})" style="background:#e74c3c;color:white;margin-left:5px;">×</button>
+                    </div>
+                `;
+                elements.cartList.appendChild(li);
+            });
+        }
 
-    elements.totalEl.textContent = `Rp ${formatCurrency(total)}`;
+        elements.totalEl.textContent = `Rp ${formatCurrency(total)}`;
+    }, 100);
 }
 
-// Quantity functions
+function updateBasePriceDelayed(id, newPriceStr) {
+    if (renderTimeout) clearTimeout(renderTimeout);
+    renderTimeout = setTimeout(() => {
+        updateBasePrice(id, newPriceStr);
+    }, 500);
+}
+
 function decreaseQuantity(id) {
     const item = cart.find(item => item.id === id);
     if (item && item.quantity > 1) {
@@ -223,9 +230,7 @@ function decreaseQuantity(id) {
 
 function increaseQuantity(id) {
     const item = cart.find(item => item.id === id);
-    if (item) {
-        item.quantity += 1;
-    }
+    if (item) item.quantity += 1;
     renderCart();
 }
 
@@ -257,15 +262,13 @@ function checkout() {
         id: Date.now(), 
         date, 
         customerName,
-        items: JSON.parse(JSON.stringify(cart)), // salin nilai saat ini
+        items: JSON.parse(JSON.stringify(cart)),
         total,
         paymentAmount,
         change
     };
     transactions.push(transaction);
     localStorage.setItem('transactions', JSON.stringify(transactions));
-
-    // update stok tidak ada di model sekarang, jadi tidak dilakukan
 
     showReceipt(transaction);
     cart = [];
@@ -310,10 +313,37 @@ function printReceipt() {
 
     showReceipt(transaction);
 
-    setTimeout(() => {
-        window.print();
-        document.getElementById('receipt').classList.add('hidden');
-    }, 500);
+    // Ambil isi struk
+    const receiptContent = document.getElementById('receipt').outerHTML;
+
+    // Buka window baru khusus struk
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Struk Pembayaran</title>
+            <style>
+                body { font-family: 'Courier New', monospace; padding: 20px; }
+                .receipt { max-width: 300px; margin: auto; }
+                .receipt-header { text-align: center; margin-bottom: 10px; }
+                .receipt-items { margin: 10px 0; }
+                .receipt-items li { list-style: none; margin: 4px 0; }
+                .receipt-total { font-weight: bold; margin-top: 10px; text-align: right; }
+                .receipt-footer { text-align: center; font-size: 0.9rem; margin-top: 10px; }
+            </style>
+        </head>
+        <body>
+            ${receiptContent}
+            <script>
+                window.onload = function() {
+                    window.print();
+                    window.onafterprint = window.close;
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 
 function clearCart() {
@@ -506,66 +536,3 @@ document.addEventListener('DOMContentLoaded', function() {
     renderProducts();
     renderCart();
 });
-
-let renderTimeout = null;
-
-function renderCart() {
-    if (renderTimeout) {
-        clearTimeout(renderTimeout);
-    }
-    
-    renderTimeout = setTimeout(() => {
-        // Kode renderCart yang asli di sini
-        const elements = getDOMElements();
-        if (!elements.cartList || !elements.cartEmpty || !elements.totalEl) return;
-
-        elements.cartList.innerHTML = '';
-        let total = 0;
-
-        if (cart.length === 0) {
-            elements.cartEmpty.style.display = 'block';
-            elements.cartList.style.display = 'none';
-        } else {
-            elements.cartEmpty.style.display = 'none';
-            elements.cartList.style.display = 'block';
-
-            cart.forEach(item => {
-                const itemTotal = item.price * item.quantity;
-                total += itemTotal;
-
-                const li = document.createElement('li');
-                li.className = 'cart-item';
-                li.innerHTML = `
-                    <div class="cart-item-info">
-                        <div class="cart-item-name">${item.name}</div>
-                        <div class="cart-item-price-row">
-                            <input type="text" value="${formatCurrency(item.basePrice)}"
-                                   oninput="updateBasePriceDelayed(${item.id}, this.value)"
-                                   class="cart-item-price-input">
-                            <div class="cart-item-discount-note">${item.discount > 0 ? `Diskon ${item.discount}% → Rp ${formatCurrency(item.price)}` : `Rp ${formatCurrency(item.price)}`}</div>
-                        </div>
-                    </div>
-                    <div class="cart-item-quantity">
-                        <button class="quantity-btn" onclick="decreaseQuantity(${item.id})">-</button>
-                        <span>${item.quantity}</span>
-                        <button class="quantity-btn" onclick="increaseQuantity(${item.id})">+</button>
-                        <button class="quantity-btn" onclick="removeFromCart(${item.id})" style="background:#e74c3c;color:white;margin-left:5px;">×</button>
-                    </div>
-                `;
-                elements.cartList.appendChild(li);
-            });
-        }
-
-        elements.totalEl.textContent = `Rp ${formatCurrency(total)}`;
-    }, 100); // Delay 100ms
-}
-
-function updateBasePriceDelayed(id, newPriceStr) {
-    if (renderTimeout) {
-        clearTimeout(renderTimeout);
-    }
-    
-    renderTimeout = setTimeout(() => {
-        updateBasePrice(id, newPriceStr);
-    }, 500); // Delay 500ms sebelum update
-}
