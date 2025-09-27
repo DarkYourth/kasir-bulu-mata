@@ -1,3 +1,4 @@
+
 // Inisialisasi data default jika kosong
 let products = JSON.parse(localStorage.getItem('products')) || [
     { id: 1, name: 'Bulu Mata Natural', price: 50000, discount: 0, photo: 'data:image/svg+xml;base64,...', category: 'natural' },
