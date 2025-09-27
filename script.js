@@ -287,41 +287,36 @@ function showReceipt(transaction) {
     receipt.classList.remove('hidden');
 }
 
-// ✅ Perbaikan: print lebih kompatibel tablet & PC
-function printReceipt() {
+// ✅ Cetak struk jadi PDF (kompatibel di tablet & PC)
+async function printReceipt() {
     if (cart.length === 0) {
         alert('Tidak ada transaksi untuk dicetak!');
         return;
     }
 
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
     const date = new Date().toLocaleString('id-ID');
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const transaction = { id: Date.now(), date, items: JSON.parse(JSON.stringify(cart)), total };
 
-    showReceipt(transaction);
+    doc.setFont("courier", "normal");
+    doc.setFontSize(14);
+    doc.text("Uyunk Lashes", 10, 10);
+    doc.text("Struk Pembayaran", 10, 18);
+    doc.text("Tanggal: " + date, 10, 26);
 
-    const receiptContent = document.getElementById('receipt').outerHTML;
-    const printWindow = window.open('', '', 'width=400,height=600');
-    printWindow.document.write(`
-        <html>
-        <head>
-            <title>Struk Uyunk Lashes</title>
-            <link rel="stylesheet" href="style.css">
-        </head>
-        <body>
-            ${receiptContent}
-            <script>
-                window.onload = function() {
-                    window.print();
-                    window.onafterprint = window.close;
-                }
-            <\/script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
+    let y = 36;
+    cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        doc.text(`${item.name} x${item.quantity} - Rp ${formatCurrency(itemTotal)}`, 10, y);
+        y += 8;
+    });
 
-    document.getElementById('receipt').classList.add('hidden');
+    doc.text("Total: Rp " + formatCurrency(total), 10, y + 6);
+    doc.text("Terima kasih!", 10, y + 20);
+
+    doc.save("struk.pdf");
 }
 
 function clearCart() {
@@ -462,15 +457,14 @@ function importData() {
                 if (data.products) {
                     products = data.products;
                     localStorage.setItem('products', JSON.stringify(products));
+                    renderProducts();
+                    if (document.getElementById('adminPanel') && !document.getElementById('adminPanel').classList.contains('hidden')) {
+                        renderAdminProducts();
+                    }
                 }
                 if (data.transactions) {
                     transactions = data.transactions;
                     localStorage.setItem('transactions', JSON.stringify(transactions));
-                }
-                renderProducts();
-                const elements = getDOMElements();
-                if (elements.adminPanel && !elements.adminPanel.classList.contains('hidden')) {
-                    renderAdminProducts();
                 }
                 alert('Data berhasil diimport!');
             } catch (error) {
