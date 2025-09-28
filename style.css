@@ -779,6 +779,146 @@ header nav button:hover {
     }
 }
 
+/* Perbaikan tambahan untuk print */
+@media print and (max-width: 1024px) {
+    #receipt {
+        font-size: 16px !important;
+        padding: 15px !important;
+    }
+    
+    .receipt-header h2 {
+        font-size: 22px !important;
+    }
+    
+    .receipt-items li {
+        font-size: 14px !important;
+        padding: 8px 0 !important;
+    }
+}
+
+/* History Transaksi Styles - TAMBAHAN BARU */
+.history-panel {
+    padding: 20px;
+}
+
+.history-filters {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-select, .date-input {
+    padding: 10px;
+    border: 2px solid #ffb6c1;
+    border-radius: 8px;
+    background: white;
+    color: #333;
+}
+
+.custom-range {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.custom-range.hidden {
+    display: none;
+}
+
+.history-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.summary-card {
+    background: linear-gradient(135deg, #fff5f7, #ffe6f2);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    border: 2px solid #ffb6c1;
+}
+
+.summary-card h3 {
+    color: #ff1493;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.summary-card span {
+    font-size: 20px;
+    font-weight: bold;
+    color: #d35400;
+}
+
+.transactions-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.transaction-item {
+    background: linear-gradient(135deg, #fff, #fff5f7);
+    border: 2px solid #ffb6c1;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.transaction-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.2);
+}
+
+.transaction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #ffb6c1;
+}
+
+.transaction-id {
+    font-weight: bold;
+    color: #ff1493;
+}
+
+.transaction-date {
+    color: #7f8c8d;
+    font-size: 12px;
+}
+
+.transaction-customer {
+    color: #333;
+    font-style: italic;
+}
+
+.transaction-details {
+    margin: 10px 0;
+}
+
+.transaction-items {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.transaction-total {
+    font-weight: bold;
+    color: #d35400;
+    text-align: right;
+}
+
+.transaction-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .main-content {
@@ -815,5 +955,18 @@ header nav button:hover {
     
     .tab {
         text-align: center;
+    }
+    
+    .history-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .custom-range {
+        flex-direction: column;
+    }
+    
+    .history-summary {
+        grid-template-columns: 1fr;
     }
 }
